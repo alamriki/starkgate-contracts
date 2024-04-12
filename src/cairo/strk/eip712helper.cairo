@@ -1,28 +1,36 @@
-// sn_keccak('StarkNetDomain(name:felt,version:felt,chainId:felt)')
-const STARKNET_DOMAIN_TYPE_HASH: felt252 =
-    0x1bfc207425a47a5dfa1a50a4f5241203f50624ca5fdf5e18755765416b8e288;
+// Constants are named using uppercase and underscores for readability.
+const STARKNET_DOMAIN_TYPE_HASH: Felt252 =
+    0x1BFC207425A47A5DFA1A50A4F5241203F50624CA5FDF5E18755765416B8E288;
 
-// sn_keccak('LockAndDelegateRequest(delegatee:felt,amount:felt,nonce:felt,expiry:felt)')
-const LOCK_AND_DELEGATE_TYPE_HASH: felt252 =
-    0x2ab9656e71e13c39f9f290cc5354d2e50a410992032118a1779539be0e4e75;
+const LOCK_AND_DELEGATE_TYPE_HASH: Felt252 =
+    0x2AB9656E71E13C39F9F290CC5354D2E50A410992032118A1779539BE0E4E75;
 
-const DAPP_NAME: felt252 = 'TOKEN_LOCK_AND_DELEGATION';
-const DAPP_VERSION: felt252 = '1.0.0';
-const STARKNET_MESSAGE: felt252 = 'StarkNet Message';
+const DAPP_NAME: &str = "TOKEN_LOCK_AND_DELEGATION";
+const DAPP_VERSION: &str = "1.0.0";
+const STARKNET_MESSAGE: &str = "StarkNet Message";
 
 use starknet::{ContractAddress, get_tx_info};
 use openzeppelin::account::interface::{AccountABIDispatcher, AccountABIDispatcherTrait};
 
-fn validate_signature(account: ContractAddress, hash: felt252, signature: Array<felt252>) {
-    let is_valid_signature_felt = AccountABIDispatcher { contract_address: account }
-        .is_valid_signature(:hash, :signature);
+// Function to validate the signature using StarkNet's Account ABI Dispatcher.
+fn validate_signature(account: ContractAddress, hash: Felt252, signature: Array<Felt252>) {
+    let dispatcher = AccountABIDispatcher { contract_address: account };
+    let is_valid_signature_felt = dispatcher.is_valid_signature(hash, signature);
 
-    // Check either 'VALID' or True for backwards compatibility.
-    let is_valid_signature = is_valid_signature_felt == starknet::VALIDATED
-        || is_valid_signature_felt == 1;
+    // Check for 'VALID' status or boolean 'true' for backwards compatibility.
+    let is_valid_signature = matches!(
+        is_valid_signature_felt,
+        starknet::VALIDATED | 1
+    );
 
-    assert(is_valid_signature, 'SIGNATURE_VALIDATION_FAILED');
+    // Use assert! macro to ensure the signature is valid.
+    assert!(
+        is_valid_signature,
+        "Signature validation failed: expected VALID or true, got {}",
+        is_valid_signature_felt
+    );
 }
+
 
 // Calculates the message hash for signing, following the SNIP equivalent of EIP-712,
 // detailed in https://community.starknet.io/t/snip-off-chain-signatures-a-la-eip712/98029
